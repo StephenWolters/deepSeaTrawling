@@ -100,12 +100,4 @@ public interface DeepSeaTrawlingConfig extends Config
 		return true;
 	}
 */
-	@ConfigItem(
-			keyName = "dumpLogs",
-			name = "Dump Logs",
-			description = "Dump Logs"
-	)
-	default boolean dumpLogs() {
-		return false;
-	}
 }

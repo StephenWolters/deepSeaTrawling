@@ -44,7 +44,7 @@ public class ShoalData {
                 case MARLIN:
                 case VIBRANT:
                 default:
-                    return  EnumSet.of(shoalDepth.SHALLOW, shoalDepth.MEDIUM, shoalDepth.DEEP, shoalDepth.UNKNOWN);
+                    return  EnumSet.of(shoalDepth.SHALLOW, shoalDepth.MEDIUM, shoalDepth.DEEP);
             }
         }
 
@@ -151,6 +151,10 @@ public class ShoalData {
 
     public EnumSet<shoalDepth> getPossibleDepths() {
         return possibleDepths;
+    }
+
+    public void setPossibleDepths(EnumSet<shoalDepth> possibleDepths) {
+        this.possibleDepths = possibleDepths;
     }
 
     public void setShoalObject(GameObject shoalObject) {

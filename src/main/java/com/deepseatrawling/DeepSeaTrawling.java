@@ -166,6 +166,9 @@ public class DeepSeaTrawling extends Plugin
 	public void onGameTick(GameTick tick)
 	{
 		ShoalData shoal = getNearestShoal();
+		if (shoal == null) {
+			return;
+		}
 
 		WorldEntity entity = shoal.getWorldEntity();
 
@@ -179,6 +182,12 @@ public class DeepSeaTrawling extends Plugin
 		WorldPoint last = shoal.getLast();
 
 		boolean isMoving = (current != null && next != null && !current.equals(next));
+
+/*		if (shoal.getDepth() == ShoalData.shoalDepth.UNKNOWN && shoal.getPossibleDepths().contains(ShoalData.shoalDepth.MEDIUM)) {
+			shoal.setDepth(ShoalData.shoalDepth.MEDIUM);
+		} else if (shoal.getDepth() == ShoalData.shoalDepth.UNKNOWN && !isMoving && shoal.getWasMoving() && shoal.getPossibleDepths().contains(ShoalData.shoalDepth.SHALLOW) && !shoal.getPossibleDepths().contains(ShoalData.shoalDepth.DEEP)) {
+			shoal.setDepth(ShoalData.shoalDepth.SHALLOW);
+		}*/
 
 		shoal.setWasMoving(isMoving);
 		shoal.setLast(currentWorldPoint);
@@ -218,7 +227,7 @@ public class DeepSeaTrawling extends Plugin
 
 	}
 */
-	private int worldDistanceSq(WorldPoint a, WorldPoint b)
+	public int localDistanceSq(LocalPoint a, LocalPoint b)
 	{
 		int dx = a.getX() - b.getX();
 		int dy = a.getY() - b.getY();
@@ -309,10 +318,10 @@ public class DeepSeaTrawling extends Plugin
 
 		if (msg.contains(" closer to the surface"))
 		{
-			adjustShoalDepthRelative(shoal, 1);
+			adjustShoalDepthRelative(shoal, -1);
 
 		} else if (msg.contains(" deeper into the depths")) {
-			adjustShoalDepthRelative(shoal, -1);
+			adjustShoalDepthRelative(shoal, 1);
 		}
 	}
 
@@ -356,12 +365,12 @@ public class DeepSeaTrawling extends Plugin
 
 			for (ShoalData.shoalDepth depth : allowed)
 			{
-				int possibleNewDepth = ShoalData.shoalDepth.asInt(depth) + 1;
-				for (ShoalData.shoalDepth candidateNewDepth : allowed)
+				int index = ShoalData.shoalDepth.asInt(depth) + delta;
+				for (ShoalData.shoalDepth candidate : allowed)
 				{
-					if (ShoalData.shoalDepth.asInt(candidateNewDepth) == possibleNewDepth)
+					if (ShoalData.shoalDepth.asInt(candidate) == index)
 					{
-						shifted.add(candidateNewDepth);
+						shifted.add(candidate);
 					}
 				}
 			}
@@ -377,6 +386,8 @@ public class DeepSeaTrawling extends Plugin
 			return;
 		}
 
+		shoal.setPossibleDepths(shoal.getSpecies().allowedDepths());
+
 		int currentDepth = ShoalData.shoalDepth.asInt(shoal.getDepth());
 		ShoalData.shoalDepth newDepth = ShoalData.shoalDepth.UNKNOWN;
 
@@ -387,6 +398,8 @@ public class DeepSeaTrawling extends Plugin
 				break;
 			}
 		}
+
+		log.debug("Shoal Depth={}", newDepth);
 
 		if (newDepth != ShoalData.shoalDepth.UNKNOWN)
 		{

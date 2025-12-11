@@ -14,6 +14,7 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class DeepSeaTrawlingOverlay extends Overlay {
 
@@ -44,6 +45,9 @@ public class DeepSeaTrawlingOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
         ShoalData shoal = plugin.getNearestShoal();
+        if (shoal == null) {
+            return null;
+        }
         if(!plugin.trackedShoals.contains(shoal.getWorldViewId())) {
             return null;
         }
@@ -83,6 +87,8 @@ public class DeepSeaTrawlingOverlay extends Overlay {
             drawStopSquares(graphics, shoal, 6, baseColour);
 
             drawArea(graphics, localLocation, size, baseColour);
+
+            drawDepthLabel(graphics, shoal);
         }
 
         return null;
@@ -152,19 +158,21 @@ public class DeepSeaTrawlingOverlay extends Overlay {
 
     private void drawStopSquares(Graphics2D square, ShoalData shoal, int sizeTiles, Color baseColour)
     {
-        int plane = shoal.getWorldEntity().getWorldView().getPlane();
-
         Color outline = new Color(baseColour.getRed(), baseColour.getGreen(), baseColour.getBlue());
         Color fill = new Color(baseColour.getRed(), baseColour.getGreen(), baseColour.getBlue(), 50);
 
         for (WorldPoint worldPoint : shoal.getStopPoints())
         {
-            if (worldPoint == null) {
+            if (worldPoint == null ) {
                 continue;
             }
 
             LocalPoint localPoint = LocalPoint.fromWorld(client, worldPoint);
             if (localPoint == null) {
+                continue;
+            }
+
+            if (plugin.localDistanceSq(localPoint, shoal.getCurrent()) < 512 * 512 && !shoal.getWasMoving()) {
                 continue;
             }
 
@@ -215,5 +223,56 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         int[] ys = { to.getY(), y1, y2 };
 
         graphics.fillPolygon(xs, ys, 3);
+    }
+
+    private void drawDepthLabel(Graphics2D graphic, ShoalData shoal)
+    {
+        ShoalData.shoalDepth depth = shoal.getDepth();
+        String text;
+        Color textColour;
+
+        switch (depth)
+        {
+            case SHALLOW:
+                text = "Shallow";
+                textColour = new Color(0, 200, 0);
+                break;
+            case MEDIUM:
+                text = "Medium";
+                textColour = new Color(255, 165, 0);
+                break;
+            case DEEP:
+                text = "DEEP";
+                textColour = new Color(200, 60, 60);
+            default:
+                text = "?";
+                textColour = Color.GRAY;
+        }
+
+        LocalPoint localPoint = shoal.getCurrent();
+        if (localPoint == null) {
+            return;
+        }
+
+        int plane = shoal.getWorldEntity().getWorldView().getPlane();
+        Point point = Perspective.localToCanvas(client, localPoint, plane);
+        if (point == null) {
+            return;
+        }
+
+        graphic.setFont(graphic.getFont().deriveFont(Font.BOLD, 16f));
+        FontMetrics metrics = graphic.getFontMetrics();
+        int width = metrics.stringWidth(text);
+        int height = metrics.getHeight();
+
+        int x = point.getX() - width / 2;
+        int y = point.getY() - 40;
+
+        graphic.setColor(new Color(0,0,0,140));
+        graphic.fillRoundRect(x - 3, y - height, width + 6, height, 6, 6);
+
+        graphic.setColor((textColour));
+        graphic.drawString(text, x, y);
+
     }
 }
