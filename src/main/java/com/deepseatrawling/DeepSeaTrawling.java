@@ -41,6 +41,9 @@ public class DeepSeaTrawling extends Plugin
 	private DeepSeaTrawlingOverlay overlay;
 
 	@Inject
+	private DeepSeaTrawlingWidgetOverlay widgetOverlay;
+
+	@Inject
 	private OverlayManager overlayManager;
 
 	public final Set<Integer> trackedShoals = new HashSet<>();
@@ -54,6 +57,11 @@ public class DeepSeaTrawling extends Plugin
 	);
 
 	private ShoalData nearestShoal;
+
+	private Player player;
+
+	private static final int PLAYER_HOTSPOT_NET_STARBOARD = 8;
+	private static final int PLAYER_HOTSPOT_NET_PORT = 9;
 
 	@Provides
 	DeepSeaTrawlingConfig provideConfig(ConfigManager configManager)
@@ -77,8 +85,10 @@ public class DeepSeaTrawling extends Plugin
 	protected void startUp() throws Exception
 	{
 		overlayManager.add(overlay);
+		overlayManager.add(widgetOverlay);
 		nearestShoal = null;
 		rebuildTrackedShoals();
+		player = client.getLocalPlayer();
 		log.info("Deep Sea Trawling Plugin Started");
 
 	}
@@ -87,6 +97,7 @@ public class DeepSeaTrawling extends Plugin
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(overlay);
+		overlayManager.remove(widgetOverlay);
 		trackedShoals.clear();
 		log.info("Deep Sea Trawling Plugin Stopped");
 	}
@@ -203,6 +214,12 @@ public class DeepSeaTrawling extends Plugin
 		shoal.setWasMoving(isMoving);
 		shoal.setLast(currentWorldPoint);
 
+		if (player!= null) {
+			log.debug("player interacting={}"+ player.getInteracting());
+		}
+		player = client.getLocalPlayer();
+
+
 	}
 
 	@Subscribe
@@ -242,6 +259,29 @@ public class DeepSeaTrawling extends Plugin
 				return;
 			}
 		}
+
+		CrewAssignments assignment = crewBySlot.computeIfAbsent(-1, k -> new CrewAssignments());
+
+		if (changed == VarbitID.SAILING_FACILITY_HOTSPOT_NUMBER)
+		{
+			assignment.setSlotVarbitId(-1);
+			assignment.setUniqueId(-1);
+			assignment.setPlayer(true);
+			assignment.setName(client.getLocalPlayer().getName());
+
+			switch(client.getVarbitValue(VarbitID.SAILING_FACILITY_HOTSPOT_NUMBER)) {
+				case PLAYER_HOTSPOT_NET_PORT:
+					assignment.setAssignment(PLAYER_HOTSPOT_NET_PORT);
+					break;
+				case PLAYER_HOTSPOT_NET_STARBOARD:
+					assignment.setAssignment(PLAYER_HOTSPOT_NET_STARBOARD);
+					break;
+				default:
+					assignment.setAssignment(-1);
+					break;
+			}
+		}
+
 	}
 
 	public int localDistanceSq(LocalPoint a, LocalPoint b)
@@ -365,12 +405,90 @@ public class DeepSeaTrawling extends Plugin
 			operatorName = msg.substring(0, index);
 		}
 
-		int netDepthIndex = getNetDepth(operatorName);
+		int netDepth = getNetDepth(operatorName);
+		if (netDepth < 0)
+		{
+			log.debug("DepthMismatch: couldn't resolve net depth for '{}'", operatorName);
+			return;
+		}
+		if (shoal.getPossibleDepths() == null || shoal.getPossibleDepths().isEmpty())
+		{
+			shoal.setPossibleDepths(shoal.getSpecies().allowedDepths());
+		}
+		EnumSet<ShoalData.shoalDepth> allowed = shoal.getPossibleDepths();
+		EnumSet<ShoalData.shoalDepth> filtered = EnumSet.noneOf(ShoalData.shoalDepth.class);
+
+		for (ShoalData.shoalDepth depth : allowed)
+		{
+			int shoalDepthIndex = ShoalData.shoalDepth.asInt(depth);
+			if (tooShallow && shoalDepthIndex > netDepth)
+			{
+				filtered.add(depth);
+			} else if (tooDeep && shoalDepthIndex < netDepth)
+			{
+				filtered.add(depth);
+			}
+		}
+
+		if (!filtered.isEmpty())
+		{
+			shoal.setPossibleDepths(filtered);
+			if(filtered.size() == 1)
+			{
+				shoal.setDepth(filtered.iterator().next());
+			}
+		}
+
+		log.debug(
+				"DepthMismatch: operator='{}' netDepth={} tooShallow={} tooDeep={} -> possible={}",
+				operatorName, netDepth, tooShallow, tooDeep, shoal.getPossibleDepths()
+		);
 
 	}
 
 	private int getNetDepth(String operatorName) {
-		return 0; //handle getting the net depth depending on who it is
+		CrewAssignments operator = findByName(operatorName);
+		if (operator == null)
+		{
+			return -1;
+		}
+
+		int netIndex = operator.getNetIndex();
+		if (netIndex < 0)
+		{
+			return -1;
+		}
+
+		int depthVarbit = (netIndex == 0)
+				? VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_0_DEPTH
+				: VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_1_DEPTH;
+
+		return client.getVarbitValue(depthVarbit);
+	}
+
+	public int getNetDepthByIndex(int netIndex)
+	{
+		switch (netIndex)
+		{
+			case 0:
+				return client.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_0_DEPTH);
+			case 1:
+				return client.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_1_DEPTH);
+			default:
+				return -1;
+		}
+	}
+
+	private CrewAssignments findByName(String operatorName)
+	{
+		for (CrewAssignments assignment : crewBySlot.values())
+		{
+			if (assignment.getName() != null && assignment.getName().equalsIgnoreCase(operatorName))
+			{
+				return assignment;
+			}
+		}
+		return null;
 	}
 
 	private void adjustShoalDepthRelative(ShoalData shoal, int delta)
@@ -439,7 +557,42 @@ public class DeepSeaTrawling extends Plugin
 
 		assignment.setAssignment(client.getVarbitValue(positionVarb));
 
-		log.debug("uniqueID={}", crewmateId);
+		switch(crewmateId) {
+			case 1:
+				assignment.setName("Jobless Jim");
+				break;
+			case 2:
+				assignment.setName("Adventurer Ada");
+				break;
+			case 3:
+				assignment.setName("Jittery Jim");
+				break;
+			case 4:
+				assignment.setName("Jolly Jim");
+				break;
+			case 5:
+				assignment.setName("Sailor Jakob");
+				break;
+			case 6:
+				assignment.setName("Oarswoman Olga");
+				break;
+			case 7:
+				assignment.setName("Bosun Zarah");
+				break;
+			case 8:
+				assignment.setName("Spotter Virginia");
+				break;
+			case 9:
+				assignment.setName("Ex-Captain Siad");
+				break;
+			case 10:
+				assignment.setName("Cabin Boy Jenkins");
+				break;
+			default:
+				break;
+		}
 	}
+
+
 
 }

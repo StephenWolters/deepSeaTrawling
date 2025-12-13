@@ -12,12 +12,17 @@ public class CrewAssignments {
     private boolean isPlayer;
 
     private int netIndex = -1;
+    private int netDepth = -1;
 
     enum Assignment
     {
         OTHER(-1),
-        TRAWLING_NET_PORT(13),
-        TRAWLING_NET_STARBOARD(14);
+
+        PLAYER_TRAWLING_NET_STARBOARD(8),
+        PLAYER_TRAWLING_NET_PORT(9),
+
+        TRAWLING_NET_STARBOARD(13),
+        TRAWLING_NET_PORT(14);
 
         private final int id;
 
@@ -37,14 +42,12 @@ public class CrewAssignments {
         public int getNetIndex()
         {
             switch (this) {
-                case TRAWLING_NET_PORT: return 0;
-                case TRAWLING_NET_STARBOARD: return 1;
+                case TRAWLING_NET_STARBOARD:
+                case PLAYER_TRAWLING_NET_STARBOARD: return 0;
+                case TRAWLING_NET_PORT:
+                case PLAYER_TRAWLING_NET_PORT: return 1;
                 default: return -1;
             }
-        }
-
-        public boolean isNet() {
-            return this == TRAWLING_NET_PORT || this == TRAWLING_NET_STARBOARD;
         }
     }
 

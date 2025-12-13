@@ -242,7 +242,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
                 textColour = new Color(255, 165, 0);
                 break;
             case DEEP:
-                text = "DEEP";
+                text = "Deep";
                 textColour = new Color(200, 60, 60);
                 break;
             default:

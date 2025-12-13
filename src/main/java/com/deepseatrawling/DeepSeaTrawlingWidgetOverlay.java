@@ -1,0 +1,99 @@
+package com.deepseatrawling;
+
+import lombok.Getter;
+import net.runelite.api.Client;
+import net.runelite.api.widgets.Widget;
+import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayLayer;
+import net.runelite.client.ui.overlay.OverlayPosition;
+
+import javax.inject.Inject;
+import java.awt.*;
+
+public class DeepSeaTrawlingWidgetOverlay extends Overlay {
+
+    private static final int SAILING_SIDEPANEL_GROUP = 937;
+    private static final int FACILITIES_CONTENT_CLICKLAYER_CHILD = 25;
+
+    private static final int STARBOARD_DOWN_INDEX = 41;
+    private static final int STARBOARD_UP_INDEX = 42;
+    private static final int PORT_DOWN_INDEX = 45;
+    private static final int PORT_UP_INDEX = 46;
+
+    @Getter private Integer highlightNetIndex = null;
+    @Getter private Integer highlightDirection = null;
+
+    private final Client client;
+    private final DeepSeaTrawling plugin;
+
+    enum Direction {
+        UP,
+        DOWN
+    }
+
+    @Inject
+    public DeepSeaTrawlingWidgetOverlay(Client client, DeepSeaTrawling plugin)
+    {
+        this.client = client;
+        this.plugin = plugin;
+        setPosition(OverlayPosition.DYNAMIC);
+        setLayer(OverlayLayer.ABOVE_WIDGETS);
+        setPriority(10f);
+    }
+
+    @Override
+    public Dimension render(Graphics2D graphics)
+    {
+       ShoalData shoal = plugin.getNearestShoal();
+       if (shoal != null && shoal.getDepth() != ShoalData.shoalDepth.UNKNOWN)
+       {
+           int desired = ShoalData.shoalDepth.asInt(shoal.getDepth());
+           if (desired < 1) {
+               return null;
+           }
+
+           for (int netIndex = 0; netIndex <= 1; netIndex++)
+           {
+               int current = plugin.getNetDepthByIndex(netIndex);
+               if (current <= 0) {
+                   continue;
+               }
+               if (current == desired) {
+                   continue;
+               }
+
+               Direction direction = current < desired ? Direction.DOWN : Direction.UP;
+               highlightNetButton(graphics, netIndex, direction);
+           }
+       }
+        return null;
+    }
+
+    private void highlightNetButton(Graphics2D g, int netIndex, Direction direction)
+    {
+        Widget parent = client.getWidget(SAILING_SIDEPANEL_GROUP , FACILITIES_CONTENT_CLICKLAYER_CHILD);
+        if (parent == null) return;
+
+        int childId;
+        if (netIndex == 0) // you defined 0=starboard, 1=port in CrewAssignments
+            childId = direction == Direction.DOWN ? STARBOARD_DOWN_INDEX : STARBOARD_UP_INDEX;
+        else if (netIndex == 1)
+            childId = direction == Direction.DOWN ? PORT_DOWN_INDEX : PORT_UP_INDEX;
+        else
+            return;
+
+        Widget button = parent.getChild(childId);
+        if (button == null || button.isHidden()) return;
+
+        Rectangle bounds = button.getBounds();
+        if (bounds == null) return;
+
+        g.setColor(new Color(255, 255, 0, 120));
+        g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8, 8);
+
+        g.setColor(new Color(255, 255, 0, 220));
+        g.setStroke(new BasicStroke(2));
+        g.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8, 8);
+    }
+
+}
