@@ -1,11 +1,17 @@
 package com.deepseatrawling;
 
-public class CrewAssignments {
-    int uniqueId;
-    String name;
-    boolean isPlayer;
+import lombok.Getter;
+import lombok.Setter;
 
-    int index;
+@Getter
+@Setter
+public class CrewAssignments {
+    private int slotVarbitId;
+    private int uniqueId;
+    private String name;
+    private boolean isPlayer;
+
+    private int netIndex = -1;
 
     enum Assignment
     {
@@ -42,6 +48,12 @@ public class CrewAssignments {
         }
     }
 
-    Assignment assignment;
+    private Assignment assignment = Assignment.OTHER;
+
+    public void setAssignment(int posVarbitValue)
+    {
+        this.assignment = Assignment.fromId(posVarbitValue);
+        this.netIndex = assignment.getNetIndex();
+    }
 
 }

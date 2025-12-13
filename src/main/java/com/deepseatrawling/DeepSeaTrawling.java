@@ -1,11 +1,15 @@
 package com.deepseatrawling;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Provides;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -59,6 +63,16 @@ public class DeepSeaTrawling extends Plugin
 
 	private static final int SHOAL_WORLD_ENTITY_TYPE = 4;
 
+	private static final Map<Integer, Integer> CREW_VARBITS = ImmutableMap.<Integer, Integer>builder()
+			.put(VarbitID.SAILING_CREW_SLOT_1, VarbitID.SAILING_CREW_SLOT_1_POSITION)
+			.put(VarbitID.SAILING_CREW_SLOT_2, VarbitID.SAILING_CREW_SLOT_2_POSITION)
+			.put(VarbitID.SAILING_CREW_SLOT_3, VarbitID.SAILING_CREW_SLOT_3_POSITION)
+			.put(VarbitID.SAILING_CREW_SLOT_4, VarbitID.SAILING_CREW_SLOT_4_POSITION)
+			.put(VarbitID.SAILING_CREW_SLOT_5, VarbitID.SAILING_CREW_SLOT_5_POSITION)
+			.build();
+
+	private final Map<Integer, CrewAssignments> crewBySlot = new HashMap<>();
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -82,9 +96,6 @@ public class DeepSeaTrawling extends Plugin
 	}
 
 	public boolean netFull = false;
-
-	public int currentNetDepthLeft = 0;
-	public int currentNetDepthRight = 0;
 
 	@Subscribe
 	public void onWorldEntitySpawned(WorldEntitySpawned event) throws IOException {
@@ -214,19 +225,25 @@ public class DeepSeaTrawling extends Plugin
 		}
 	}
 
-/*
+
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged e)
 	{
-		int idx = e.getVarbitId(); //5123 for net, VarpId -
-		int value = e.getValue(); //0, raised, 1, shallow, 2, medium, 3, deep,
+		int changed = e.getVarbitId();
 
-		// Quick filter: only log small values that look like states (0–5)
+		for (Map.Entry<Integer, Integer> entry : CREW_VARBITS.entrySet())
+		{
+			int slotVarb = entry.getKey();
+			int positionVarb = entry.getValue();
 
-			log.debug("Varbit Changed idx={} value={}", idx, value);
-
+			if (changed == slotVarb || changed == positionVarb)
+			{
+				loadSingle(slotVarb, positionVarb);
+				return;
+			}
+		}
 	}
-*/
+
 	public int localDistanceSq(LocalPoint a, LocalPoint b)
 	{
 		int dx = a.getX() - b.getX();
@@ -405,6 +422,24 @@ public class DeepSeaTrawling extends Plugin
 		{
 			shoal.setDepth(newDepth);
 		}
+	}
+
+	private void loadSingle(int slotVarb, int positionVarb)
+	{
+		int crewmateId = client.getVarbitValue(slotVarb);
+		if (crewmateId == 0)
+		{
+			crewBySlot.remove(slotVarb);
+			return;
+		}
+
+		CrewAssignments assignment = crewBySlot.computeIfAbsent(slotVarb, k -> new CrewAssignments());
+		assignment.setSlotVarbitId(slotVarb);
+		assignment.setUniqueId(crewmateId);
+
+		assignment.setAssignment(client.getVarbitValue(positionVarb));
+
+		log.debug("uniqueID={}", crewmateId);
 	}
 
 }
