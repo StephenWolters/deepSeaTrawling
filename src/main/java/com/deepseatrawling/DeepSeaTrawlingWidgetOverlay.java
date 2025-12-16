@@ -5,6 +5,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.api.WorldEntity;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -75,26 +76,33 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
             }
         }
 
-        int childId;
-        if (netIndex == 0)
-            childId = direction == Direction.DOWN ? STARBOARD_DOWN_INDEX : STARBOARD_UP_INDEX;
-        else if (netIndex == 1)
-            childId = direction == Direction.DOWN ? PORT_DOWN_INDEX : PORT_UP_INDEX;
-        else
+        int[] childIds = {-1, -1};
+        if (netIndex == 0) {
+            childIds[0] = (direction == Direction.DOWN ? STARBOARD_DOWN_INDEX : STARBOARD_UP_INDEX);
+            childIds[1] = (direction == Direction.DOWN ? SKIFF_DOWN_INDEX : SKIFF_UP_INDEX);
+        } else if (netIndex == 1) {
+            childIds[0] = direction == Direction.DOWN ? PORT_DOWN_INDEX : PORT_UP_INDEX;
+        } else {
             return;
+        }
 
-        Widget button = parent.getChild(childId);
-        if (button == null || button.isHidden() || button.getBounds().width <=0 || button.getBounds().height <= 0 || hidden || !client.getWidget(161,73).getBounds().intersects(button.getBounds())) return;
+        for(int childId : childIds) {
+            if (childId == -1) continue;
 
-        Rectangle bounds = button.getBounds();
-        if (bounds == null) return;
+            Widget button = parent.getChild(childId);
+            if (button == null || button.isHidden() || button.getBounds().width <=0 || button.getBounds().height <= 0 || hidden || !client.getWidget(161,73).getBounds().intersects(button.getBounds())) continue;
 
-        g.setColor(new Color(255, 255, 0, 120));
-        g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8, 8);
+            Rectangle bounds = button.getBounds();
+            if (bounds == null) continue;
 
-        g.setColor(new Color(255, 255, 0, 220));
-        g.setStroke(new BasicStroke(2));
-        g.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8, 8);
+            g.setColor(new Color(255, 255, 0, 120));
+            g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8, 8);
+
+            g.setColor(new Color(255, 255, 0, 220));
+            g.setStroke(new BasicStroke(2));
+            g.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8, 8);
+        }
+
     }
 
 }

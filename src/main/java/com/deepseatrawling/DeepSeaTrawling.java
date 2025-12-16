@@ -56,14 +56,6 @@ public class DeepSeaTrawling extends Plugin
 	private TrawlingNetInfoBox trawlingNetInfoBox;
 
 	public final Set<Integer> trackedShoals = new HashSet<>();
-	public final List<ShoalData.ShoalSpecies> shoalTypes = List.of(
-			ShoalData.ShoalSpecies.GIANT_KRILL,
-			ShoalData.ShoalSpecies.HADDOCK,
-			ShoalData.ShoalSpecies.HALIBUT,
-			ShoalData.ShoalSpecies.YELLOWFIN,
-			ShoalData.ShoalSpecies.BLUEFIN,
-			ShoalData.ShoalSpecies.MARLIN
-	);
 
 	private ShoalData nearestShoal;
 
@@ -76,7 +68,7 @@ public class DeepSeaTrawling extends Plugin
 	private static final int SHOAL_WORLD_ENTITY_TYPE = 4;
 
 	public Net[] netList = {
-			new Net(net.runelite.api.gameval.VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_0_DEPTH),
+			new Net(VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_0_DEPTH),
 			new Net(VarbitID.SAILING_SIDEPANEL_BOAT_TRAWLING_NET_1_DEPTH)
 	};
 
@@ -340,32 +332,34 @@ public class DeepSeaTrawling extends Plugin
 		trackedShoals.clear();
 
 		if(config.showGiantKrill()) {
-			trackedShoals.add(26);
-			trackedShoals.add(27);
-			trackedShoals.add(28);
-			trackedShoals.add(29);
+			for (int id : ShoalTypes.GIANT_KRILL.getIds()) {
+				trackedShoals.add(id);
+			}
 		}
 		if(config.showHaddock()) {
-			trackedShoals.add(23);
-			trackedShoals.add(24);
-			trackedShoals.add(25);
+			for (int id : ShoalTypes.HADDOCK.getIds()) {
+				trackedShoals.add(id);
+			}
 		}
 		if(config.showHalibut()) {
-			trackedShoals.add(18);
-			trackedShoals.add(19);
+			for (int id : ShoalTypes.HALIBUT.getIds()) {
+				trackedShoals.add(id);
+			}
 		}
 		if(config.showYellowfin()) {
-			trackedShoals.add(20);
-			trackedShoals.add(21);
-			trackedShoals.add(22);
+			for (int id : ShoalTypes.YELLOWFIN.getIds()) {
+				trackedShoals.add(id);
+			}
 		}
 		if(config.showBluefin()) {
-			trackedShoals.add(16);
-			trackedShoals.add(17);
+			for (int id : ShoalTypes.BLUEFIN.getIds()) {
+				trackedShoals.add(id);
+			}
 		}
 		if(config.showMarlin()) {
-			trackedShoals.add(14);
-			trackedShoals.add(15);
+			for (int id : ShoalTypes.MARLIN.getIds()) {
+				trackedShoals.add(id);
+			}
 		}
 	}
 

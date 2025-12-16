@@ -2,6 +2,7 @@ package com.deepseatrawling;
 
 import net.runelite.api.*;
 import net.runelite.api.Point;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -265,7 +266,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         int anchorX = bounds.x + bounds.width / 2;
         int anchorY = bounds.y;
 
-        graphic.setFont(graphic.getFont().deriveFont(Font.BOLD, 16f));
+        graphic.setFont(FontManager.getRunescapeBoldFont().deriveFont( 14f));
         FontMetrics metrics = graphic.getFontMetrics();
         int width = metrics.stringWidth(text);
         int height = metrics.getHeight();

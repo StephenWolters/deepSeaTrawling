@@ -60,7 +60,7 @@ public class TrawlingNetOverlay extends Overlay {
             if (net == null) continue;
 
             int current = Net.NetDepth.asInt(net.getNetDepth());
-            if (current <= 0 || current == desired) continue;
+            if (current <= 0 || current == desired || plugin.fishQuantity >= totalNetSize) continue;
 
             trawlingNetOutline(graphics, plugin.fishQuantity, totalNetSize, plugin.netObjectByIndex[netIndex]);
         }
