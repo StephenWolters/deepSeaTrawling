@@ -253,33 +253,29 @@ public class DeepSeaTrawling extends Plugin
 
 		shoal.setCurrent(shoal.getWorldEntity().getLocalLocation());
 
-/*
-
 		LocalPoint current = shoal.getWorldEntity().getLocalLocation();
 		LocalPoint next = shoal.getWorldEntity().getTargetLocation();
-
-		WorldPoint currentWorldPoint = WorldPoint.fromLocalInstance(client, current);
-		WorldPoint last = shoal.getLast();
+        shoal.setCurrent(current);
 
 		boolean isMoving = (current != null && next != null && !current.equals(next));
 
-		if (currentWorldPoint != null && isMoving) {
-			if ((last == null || worldDistanceSq(last, currentWorldPoint) < 40 * 40)) {
-				shoal.setPathPoints(currentWorldPoint);
-			} else {
-				shoal.setPathPoints(currentWorldPoint);
-			}
-		}
+        int nowTick = client.getTickCount();
 
-		if (shoal.getWasMoving() && !isMoving && current != null)
-		{
-			shoal.setStopPoints(currentWorldPoint);
-		}
+        if (shoal.getWasMoving() && !isMoving) {
+            int stopDurationTicks = ShoalData.shoalTimers.get(ShoalTypes.fromIdToSpecies(getNearestShoal().getWorldViewId()));
+            shoal.beginStopTimer(nowTick, stopDurationTicks);
+        }
 
 		shoal.setWasMoving(isMoving);
-		shoal.setLast(currentWorldPoint);
 
-		*/
+        // Transition: stopped -> moving
+        if (!shoal.getWasMoving() && isMoving)
+        {
+            shoal.clearStopTimer();
+        }
+
+        shoal.setWasMoving(isMoving);
+
 	}
 
 	@Subscribe

@@ -12,6 +12,7 @@ import net.runelite.api.coords.LocalPoint;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -228,29 +229,29 @@ public class DeepSeaTrawlingOverlay extends Overlay {
 
     private void drawDepthLabel(Graphics2D graphic, ShoalData shoal, int sizeTiles)
     {
-        if (!config.showShoalDepthText()) {
+        if (!config.showShoalDepthText() && !config.showDepthTimer()) {
             return;
         }
         ShoalData.ShoalDepth depth = shoal.getDepth();
-        String text;
+        String depthText;
         Color textColour;
 
         switch (depth)
         {
             case SHALLOW:
-                text = "Shallow";
+                depthText = "Shallow";
                 textColour = new Color(0, 200, 0);
                 break;
             case MEDIUM:
-                text = "Medium";
+                depthText = "Medium";
                 textColour = new Color(255, 165, 0);
                 break;
             case DEEP:
-                text = "Deep";
+                depthText = "Deep";
                 textColour = new Color(200, 60, 60);
                 break;
             default:
-                text = "?";
+                depthText = "UNKNOWN";
                 textColour = Color.GRAY;
         }
 
@@ -260,9 +261,6 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         }
 
         LocalPoint centralPoint = object.getLocalLocation();
-        if (centralPoint == null) {
-            return;
-        }
 
         Polygon poly = Perspective.getCanvasTilePoly(client, centralPoint, sizeTiles);
         if (poly == null) {
@@ -275,18 +273,67 @@ public class DeepSeaTrawlingOverlay extends Overlay {
 
         graphic.setFont(FontManager.getRunescapeBoldFont().deriveFont( 14f));
         FontMetrics metrics = graphic.getFontMetrics();
-        int width = metrics.stringWidth(text);
-        int height = metrics.getHeight();
 
-        int x = anchorX - width / 2;
+        java.util.List<String> lines = new ArrayList<>();
+
+        if (config.showShoalDepthText()) {
+            lines.add(depthText);
+        }
+
+        int nowTick = client.getTickCount();
+        if (!shoal.getWasMoving() && shoal.hasActiveStopTimer() && config.showDepthTimer())
+        {
+            int tDepth = shoal.getTicksUntilDepthChange(nowTick);
+            int tMove  = shoal.getTicksUntilMove(nowTick);
+
+            // Show "until net change" only before halfway point
+            if (tDepth > 0)
+            {
+                lines.add("Net change: " + formatTicks(tDepth));
+            }
+            // Always show "until move" while stopped (until it hits 0)
+            if (tMove >= 0)
+            {
+                lines.add("Moves: " + formatTicks(tMove));
+            }
+        }
+
+        int lineHeight = metrics.getHeight();
+        int maxWidth = 0;
+
+        for (String str : lines) {
+            maxWidth = Math.max(maxWidth, metrics.stringWidth(str));
+        }
+
+        int x = anchorX - maxWidth / 2;
         int y = anchorY - 8;
 
+        int boxHeight = lineHeight * lines.size();
         graphic.setColor(new Color(0,0,0,140));
-        graphic.fillRoundRect(x - 3, y - height, width + 6, height, 6, 6);
+        graphic.fillRoundRect(x - 3, y - boxHeight, maxWidth + 6, boxHeight, 6, 6);
 
-        graphic.setColor((textColour));
-        graphic.drawString(text, x, y);
+        // Draw lines top -> bottom
+        for (int i = 0; i < lines.size(); i++)
+        {
+            String l = lines.get(i);
+            int lx = anchorX - (metrics.stringWidth(l) / 2);
+            int ly = y - (lineHeight * (lines.size() - 1 - i)); // stack upward
+
+            // color: depth line uses depth colour; timers use white
+            graphic.setColor(i == 0 ? textColour : Color.WHITE);
+            graphic.drawString(l, lx, ly);
+        }
 
     }
+
+    private static String formatTicks(int ticks)
+    {
+        if (ticks < 0) return "";
+        int totalSeconds = (int) Math.ceil(ticks * 0.6);
+        int m = totalSeconds / 60;
+        int s = totalSeconds % 60;
+        return (m > 0) ? String.format("%d:%02d", m, s) : String.format("%ds", s);
+    }
+
 
 }

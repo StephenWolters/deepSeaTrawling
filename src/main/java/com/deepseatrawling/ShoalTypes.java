@@ -13,6 +13,15 @@ public enum ShoalTypes {
 
     private static final Map<Integer, ShoalTypes> SHOAL_ID = new HashMap<>();
 
+    private static final Map<ShoalTypes, ShoalData.ShoalSpecies> SHOAL_TYPES_SHOAL_SPECIES_MAP = Map.of(
+            GIANT_KRILL, ShoalData.ShoalSpecies.GIANT_KRILL,
+            HADDOCK, ShoalData.ShoalSpecies.HADDOCK,
+            YELLOWFIN, ShoalData.ShoalSpecies.YELLOWFIN,
+            HALIBUT, ShoalData.ShoalSpecies.HALIBUT,
+            BLUEFIN, ShoalData.ShoalSpecies.BLUEFIN,
+            MARLIN, ShoalData.ShoalSpecies.MARLIN
+    );
+
     static {
         for (ShoalTypes type : values()) {
             for (int id : type.ids) {
@@ -34,4 +43,8 @@ public enum ShoalTypes {
     public static ShoalTypes fromId(int id) {
         return SHOAL_ID.get(id);
     }
+
+    public static ShoalData.ShoalSpecies fromType(ShoalTypes shoal) { return SHOAL_TYPES_SHOAL_SPECIES_MAP.get(shoal); }
+
+    public static ShoalData.ShoalSpecies fromIdToSpecies(int id) { return SHOAL_TYPES_SHOAL_SPECIES_MAP.get(SHOAL_ID.get(id)); }
 }

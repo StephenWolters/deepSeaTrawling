@@ -1,10 +1,11 @@
 package com.deepseatrawling;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
 import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
 import net.runelite.api.gameval.AnimationID;
@@ -88,6 +89,18 @@ public class ShoalData {
             }
         }
     }
+
+    public static Map<ShoalSpecies, Integer> shoalTimers = Map.of(
+            ShoalSpecies.GIANT_KRILL, 150,
+            ShoalSpecies.HADDOCK, 120,
+            ShoalSpecies.YELLOWFIN, 100,
+            ShoalSpecies.HALIBUT, 80,
+            ShoalSpecies.BLUEFIN, 66,
+            ShoalSpecies.MARLIN, 50
+    );
+
+    private int stopStartTick = -1;
+    private int stopDurationTicks = 0; // set when stop beginsq
 
     private NPC shoalNpc;
 
@@ -294,5 +307,45 @@ public class ShoalData {
     public NPC getShoalNpc() {
         return shoalNpc;
     }
+
+    public void beginStopTimer(int currentTick, int durationTicks)
+    {
+        this.stopStartTick = currentTick;
+        this.stopDurationTicks = durationTicks;
+    }
+
+    public void clearStopTimer()
+    {
+        this.stopStartTick = -1;
+        this.stopDurationTicks = 0;
+    }
+
+    public boolean hasActiveStopTimer()
+    {
+        return stopStartTick >= 0 && stopDurationTicks > 0;
+    }
+
+    public int getTicksUntilMove(int currentTick)
+    {
+        if (!hasActiveStopTimer()) return -1;
+        int elapsed = currentTick - stopStartTick;
+        return Math.max(0, stopDurationTicks - elapsed);
+    }
+
+    public int getTicksUntilDepthChange(int currentTick)
+    {
+        if (!hasActiveStopTimer()) return -1;
+        int half = stopDurationTicks / 2;
+        int elapsed = currentTick - stopStartTick;
+        return Math.max(0, half - elapsed);
+    }
+
+    public boolean isPastDepthChangePoint(int currentTick)
+    {
+        if (!hasActiveStopTimer()) return false;
+        int half = stopDurationTicks / 2;
+        return (currentTick - stopStartTick) >= half;
+    }
+
 
 }

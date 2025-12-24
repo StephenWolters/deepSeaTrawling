@@ -12,28 +12,28 @@ public interface DeepSeaTrawlingConfig extends Config
 {
     // --------------- Sections ------------------------
     @ConfigSection(
-            name = "shoals",
+            name = "Shoals",
             description = "Shoal rendering and prediction settings",
             position = 0
     )
     String shoalsSection = "Shoals Section";
 
     @ConfigSection(
-            name = "nets",
+            name = "Nets",
             description = "Net overlays + UI highlights",
             position = 1
     )
     String netsSection = "Nets Section";
 
     @ConfigSection(
-            name = "notifications",
+            name = "Notifications",
             description = "Desktop notifications",
             position = 2
     )
     String notifSection = "Notification Section";
 
     @ConfigSection(
-            name = "colours",
+            name = "Colours",
             description = "Custom colours for overlays",
             position = 3
     )
@@ -131,6 +131,15 @@ public interface DeepSeaTrawlingConfig extends Config
             section = shoalsSection
     )
     default int diagonalSmoothing() { return 2; } // 0..5 is a good range
+
+    @ConfigItem(
+            keyName = "showDepthTimer",
+            name = "Depth Change Timer",
+            description = "Show the Timer until the Depth changes / the Shoal moves again",
+            position = 13,
+            section = shoalsSection
+    )
+    default boolean showDepthTimer() { return true; }
 
     // ------------------------ Path Colour Mode ---------------------
     enum PathColourMode { SOLID, GRADIENT }
