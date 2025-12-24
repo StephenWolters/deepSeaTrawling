@@ -1,11 +1,7 @@
 package com.deepseatrawling;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import com.google.common.collect.ImmutableMap;
 import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
 import net.runelite.api.gameval.AnimationID;
