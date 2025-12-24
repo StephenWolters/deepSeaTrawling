@@ -297,7 +297,13 @@ public class DeepSeaTrawling extends Plugin
                 notifiedFull = false;
             }
 
-			if (msg.contains("You catch ") && !msg.contains("Trawler's Trust"))
+			if (msg.contains("Trawler's trust")) {
+				// Another message includes the additional fish caught
+				return;
+			}
+
+			String substring = "";
+			if (msg.contains("You catch "))
 			{
 				int index = "You catch ".length();
 				substring = msg.substring(index, msg.indexOf(" ", index + 1));
