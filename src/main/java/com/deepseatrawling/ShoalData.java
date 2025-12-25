@@ -96,7 +96,8 @@ public class ShoalData {
     );
 
     private int stopStartTick = -1;
-    private int stopDurationTicks = 0; // set when stop beginsq
+    private int stopDurationTicks = 0; // set when stop begins
+    private int lastMoveTick = -1;
 
     private NPC shoalNpc;
 
@@ -110,7 +111,7 @@ public class ShoalData {
 
     private GameObject shoalObject;
 
-    //private WorldPoint last;
+    private LocalPoint last;
     private LocalPoint current;
     //private LocalPoint next;
     private boolean wasMoving;
@@ -165,15 +166,16 @@ public class ShoalData {
     public void setCurrent(LocalPoint current) {
         this.current = current;
     }
-/*
-    public WorldPoint getLast() { return last; }
 
-    public void setNext(LocalPoint next) {
-        this.next = next;
+    public LocalPoint getLast() { return last; }
+
+    public void setLast(LocalPoint last) {
+        this.last = last;
     }
 
-    public void setLast(WorldPoint last) {
-        this.last = last;
+    /*
+    public void setNext(LocalPoint next) {
+        this.next = next;
     }
 
     public void setPathPoints(WorldPoint worldPoint) {

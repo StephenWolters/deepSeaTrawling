@@ -81,7 +81,7 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
                }
 
                if (!notifiedDepthChange && config.notifyDepthChange()) {
-                   notifier.notify("Trawling net(s) full! Empty now!");
+                   notifier.notify("Shoal Depth Changed! Change net depth!");
                    notifiedDepthChange = true;
                }
                if (config.showNetWidgetHint()) {

@@ -31,6 +31,10 @@ public class TrawlingNetOverlay extends Overlay {
         if (!config.highlightFullNets() && !config.highlightWrongDepthNets()) {
             return null;
         }
+        if (plugin.netList[0] == null && plugin.netList[1] == null)
+        {
+            return null;
+        }
 
         int totalNetSize = 0;
         if (plugin.netList[0] != null)
@@ -41,19 +45,18 @@ public class TrawlingNetOverlay extends Overlay {
         {
             totalNetSize += plugin.netList[1].getNetSize();
         }
-        if (plugin.netList[0] == null && plugin.netList[1] == null)
+
+        int desiredDepth = -1;
+        if (config.highlightWrongDepthNets())
         {
-            return null;
+            ShoalData shoal = plugin.getNearestShoal();
+            if (shoal != null && shoal.getDepth() != ShoalData.ShoalDepth.UNKNOWN)
+            {
+                desiredDepth = ShoalData.ShoalDepth.asInt(shoal.getDepth());
+            }
         }
 
-        ShoalData shoal = plugin.getNearestShoal();
-        if (shoal == null || shoal.getDepth() == ShoalData.ShoalDepth.UNKNOWN)
-        {
-            return null;
-        }
-
-        int desired = ShoalData.ShoalDepth.asInt(shoal.getDepth());
-        if (desired < 1)
+        if (desiredDepth < 1)
         {
             return null;
         }
@@ -66,10 +69,18 @@ public class TrawlingNetOverlay extends Overlay {
             Net net = plugin.netList[netIndex];
             if (net == null) continue;
 
-            int current = Net.NetDepth.asInt(net.getNetDepth());
-            if (current <= 0 || current == desired || plugin.fishQuantity >= totalNetSize) continue;
+            if (config.highlightFullNets() && plugin.fishQuantity >= totalNetSize)
+            {
+                trawlingNetOutline(graphics, plugin.fishQuantity, totalNetSize, netObj);
+                continue;
+            }
 
-            trawlingNetOutline(graphics, plugin.fishQuantity, totalNetSize, plugin.netObjectByIndex[netIndex]);
+            int currentDepth = Net.NetDepth.asInt(net.getNetDepth());
+            if (config.highlightWrongDepthNets() && currentDepth > 0)
+            {
+                trawlingNetOutline(graphics, plugin.fishQuantity, totalNetSize, netObj);
+            }
+
         }
 
         return null;
@@ -81,32 +92,32 @@ public class TrawlingNetOverlay extends Overlay {
             return;
         }
 
-        Shape shape = null;
+        Shape netShape = null;
         switch (config.netHighlightStyle()) {
             case CLICKBOX:
-                shape = netObject.getClickbox();
+                netShape = netObject.getClickbox();
                 break;
             case HULL_FILL:
             case OUTLINE:
-                shape = netObject.getConvexHull();
+                netShape = netObject.getConvexHull();
                 break;
         }
-        if (shape == null) {
+        if (netShape == null) {
             return;
         }
 
         if (fishQuantity >= totalNetSize && config.highlightFullNets()) {
             if (config.netHighlightStyle() == DeepSeaTrawlingConfig.NetHighlightStyle.HULL_FILL) {
                 graphic.setColor(new Color(config.netFullHighlightColour().getRed(), config.netFullHighlightColour().getGreen(),config.netFullHighlightColour().getBlue(), 60));
-                graphic.fill(shape);
+                graphic.fill(netShape);
             }
-            OverlayUtil.renderPolygon(graphic, shape, config.netFullHighlightColour());
+            OverlayUtil.renderPolygon(graphic, netShape, config.netFullHighlightColour());
         } else if (config.highlightWrongDepthNets()) {
             if (config.netHighlightStyle() == DeepSeaTrawlingConfig.NetHighlightStyle.HULL_FILL) {
                 graphic.setColor(new Color(config.netDepthHighlightColour().getRed(), config.netDepthHighlightColour().getGreen(),config.netDepthHighlightColour().getBlue(), 60));
-                graphic.fill(shape);
+                graphic.fill(netShape);
             }
-            OverlayUtil.renderPolygon(graphic, shape, config.netDepthHighlightColour());
+            OverlayUtil.renderPolygon(graphic, netShape, config.netDepthHighlightColour());
         }
 
     }

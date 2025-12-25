@@ -173,7 +173,7 @@ public interface DeepSeaTrawlingConfig extends Config
     @ConfigItem(
             keyName = "highlightFullNets",
             name = "Highlight nets when full",
-            description = "Highlights trawling nets when they're full'",
+            description = "Highlights trawling nets when they're full",
             position = 1,
             section = netsSection
     )
@@ -233,6 +233,15 @@ public interface DeepSeaTrawlingConfig extends Config
             section = notifSection
     )
     default boolean notifyDepthChange() { return true; }
+
+    @ConfigItem(
+            keyName = "notifyShoalMoving",
+            name = "Notify when shoal moves (on screen)",
+            description = "Shows a RuneLite notification when the rendered shoal begins moving",
+            position = 2,
+            section  = notifSection
+    )
+    default boolean notifyShoalMoving() { return true; }
 
     // -------------- Colours ---------------------
     @ConfigItem(

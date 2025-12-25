@@ -2,6 +2,7 @@ package com.deepseatrawling;
 
 import net.runelite.api.*;
 import net.runelite.api.Point;
+import net.runelite.client.Notifier;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -21,6 +22,10 @@ public class DeepSeaTrawlingOverlay extends Overlay {
     private final Client client;
     private final DeepSeaTrawling plugin;
     private final DeepSeaTrawlingConfig config;
+
+    @Inject
+    Notifier notifier;
+    private boolean notifiedShoalMoving = false;
 
     @Inject
     private DeepSeaTrawlingOverlay(Client client, DeepSeaTrawling plugin, DeepSeaTrawlingConfig config) {
@@ -83,6 +88,13 @@ public class DeepSeaTrawlingOverlay extends Overlay {
             drawArea(graphics, localLocation, size, baseColour);
 
             drawDepthLabel(graphics, shoal, size);
+
+            if (!shoal.hasActiveStopTimer() && !notifiedShoalMoving && config.notifyShoalMoving()) {
+                notifier.notify("Shoal is on the move! Set sail!");
+                notifiedShoalMoving = true;
+            } else if (shoal.hasActiveStopTimer()){
+                notifiedShoalMoving = false;
+            }
         }
 
         return null;
@@ -172,7 +184,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
                 continue;
             }
 
-            if (plugin.localDistanceSq(localPoint, shoal.getCurrent()) < 512 * 512 && !shoal.getWasMoving()) {
+            if (plugin.localDistanceSq(localPoint, shoal.getCurrent()) < 512 * 512) {
                 continue;
             }
 
@@ -292,6 +304,9 @@ public class DeepSeaTrawlingOverlay extends Overlay {
             {
                 lines.add("Moves: " + formatTicks(tMove));
             }
+        }
+        if (lines.isEmpty()) {
+            return;
         }
 
         int lineHeight = metrics.getHeight();

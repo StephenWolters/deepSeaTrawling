@@ -251,22 +251,25 @@ public class DeepSeaTrawling extends Plugin
 		}
 		shoal.setDepthFromAnimation();
 
-		shoal.setCurrent(shoal.getWorldEntity().getLocalLocation());
-
-		LocalPoint current = shoal.getWorldEntity().getLocalLocation();
-		LocalPoint next = shoal.getWorldEntity().getTargetLocation();
+        LocalPoint current = shoal.getWorldEntity().getLocalLocation();
         shoal.setCurrent(current);
 
-		boolean isMoving = (current != null && next != null && !current.equals(next));
-
         int nowTick = client.getTickCount();
+
+        boolean isMoving = current != null
+            && shoal.getLast() != null
+            && !current.equals(shoal.getLast());
+
+        if (shoal.getLast() == null) {
+            shoal.setLast(current);
+            shoal.setWasMoving(false);
+            return;
+        }
 
         if (shoal.getWasMoving() && !isMoving) {
             int stopDurationTicks = ShoalData.shoalTimers.get(ShoalTypes.fromIdToSpecies(getNearestShoal().getWorldViewId()));
             shoal.beginStopTimer(nowTick, stopDurationTicks);
         }
-
-		shoal.setWasMoving(isMoving);
 
         // Transition: stopped -> moving
         if (!shoal.getWasMoving() && isMoving)
@@ -274,8 +277,8 @@ public class DeepSeaTrawling extends Plugin
             shoal.clearStopTimer();
         }
 
-        shoal.setWasMoving(isMoving);
-
+		shoal.setWasMoving(isMoving);
+        shoal.setLast(current);
 	}
 
 	@Subscribe
