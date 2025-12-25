@@ -21,17 +21,18 @@ public class DeepSeaTrawlingOverlay extends Overlay {
 
     private final Client client;
     private final DeepSeaTrawling plugin;
-    private final DeepSeaTrawlingConfig config;
+
+    @Inject
+    DeepSeaTrawlingConfig config;
 
     @Inject
     Notifier notifier;
     private boolean notifiedShoalMoving = false;
 
     @Inject
-    private DeepSeaTrawlingOverlay(Client client, DeepSeaTrawling plugin, DeepSeaTrawlingConfig config) {
+    private DeepSeaTrawlingOverlay(Client client, DeepSeaTrawling plugin) {
         this.client = client;
         this.plugin = plugin;
-        this.config = config;
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
     }

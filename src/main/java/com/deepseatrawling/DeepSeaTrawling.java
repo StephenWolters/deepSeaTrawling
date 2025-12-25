@@ -4,7 +4,6 @@ import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.VarbitID;
@@ -95,7 +94,7 @@ public class DeepSeaTrawling extends Plugin
 		overlayManager.add(trawlingNetOverlay);
 
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
-		trawlingNetInfoBox = new TrawlingNetInfoBox(icon, this, config);
+		trawlingNetInfoBox = new TrawlingNetInfoBox(icon, this);
 		infoBoxManager.addInfoBox(trawlingNetInfoBox);
 
 		nearestShoal = null;

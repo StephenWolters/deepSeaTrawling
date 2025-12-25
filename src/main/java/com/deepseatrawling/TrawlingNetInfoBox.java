@@ -2,18 +2,20 @@ package com.deepseatrawling;
 
 import net.runelite.client.ui.overlay.infobox.InfoBox;
 
+import javax.inject.Inject;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class TrawlingNetInfoBox extends InfoBox {
     private final DeepSeaTrawling plugin;
-    private final DeepSeaTrawlingConfig config;
 
-    public TrawlingNetInfoBox(BufferedImage image, DeepSeaTrawling plugin, DeepSeaTrawlingConfig config)
+    @Inject
+    DeepSeaTrawlingConfig config;
+
+    public TrawlingNetInfoBox(BufferedImage image, DeepSeaTrawling plugin)
     {
         super(image, plugin);
         this.plugin = plugin;
-        this.config = config;
     }
 
     @Override

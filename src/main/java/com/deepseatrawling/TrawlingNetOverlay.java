@@ -15,13 +15,14 @@ public class TrawlingNetOverlay extends Overlay {
 
     private final Client client;
     private final DeepSeaTrawling plugin;
-    private final DeepSeaTrawlingConfig config;
 
     @Inject
-    private TrawlingNetOverlay(Client client, DeepSeaTrawling plugin, DeepSeaTrawlingConfig config) {
+    DeepSeaTrawlingConfig config;
+
+    @Inject
+    private TrawlingNetOverlay(Client client, DeepSeaTrawling plugin) {
         this.client = client;
         this.plugin = plugin;
-        this.config = config;
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
     }

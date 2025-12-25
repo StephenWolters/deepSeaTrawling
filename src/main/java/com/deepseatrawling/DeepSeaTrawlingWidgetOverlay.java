@@ -33,7 +33,9 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
 
     private final Client client;
     private final DeepSeaTrawling plugin;
-    private final DeepSeaTrawlingConfig config;
+
+    @Inject
+    DeepSeaTrawlingConfig config;
 
     enum Direction {
         UP,
@@ -41,11 +43,10 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
     }
 
     @Inject
-    public DeepSeaTrawlingWidgetOverlay(Client client, DeepSeaTrawling plugin, DeepSeaTrawlingConfig config)
+    public DeepSeaTrawlingWidgetOverlay(Client client, DeepSeaTrawling plugin)
     {
         this.client = client;
         this.plugin = plugin;
-        this.config = config;
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_WIDGETS);
     }
