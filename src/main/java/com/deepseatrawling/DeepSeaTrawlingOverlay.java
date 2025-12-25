@@ -34,8 +34,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
 
-
-        if (plugin.netObjectByIndex[0] != null || plugin.netObjectByIndex[1] != null)
+        if (plugin.netObjectByIndex[0] == null && plugin.netObjectByIndex[1] == null)
         {
             return null;
         }
@@ -43,17 +42,14 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         if (shoal == null) {
             return null;
         }
-        if(!plugin.trackedShoals.contains(shoal.getWorldViewId())) {
-            return null;
-        }
 
         GameObject object = shoal.getShoalObject();
         if (object == null)
         {
-            LocalPoint localPoint = shoal.getCurrent();
-            if (localPoint != null) {
-                drawArea(graphics, localPoint, 3, Color.WHITE);
-            }
+//            LocalPoint localPoint = shoal.getCurrent();
+//            if (localPoint != null) {
+//                drawArea(graphics, localPoint, 3, Color.WHITE);
+//            }
             return null;
         }
 
