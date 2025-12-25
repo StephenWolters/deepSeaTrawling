@@ -119,10 +119,11 @@ public class ShoalData {
     private List<WorldPoint> pathPoints = new ArrayList<>();
     private List<WorldPoint> stopPoints = new ArrayList<>();
 
-    public ShoalData(int worldViewId, WorldEntity worldEntity) throws IOException {
+    public ShoalData(int worldViewId, WorldEntity worldEntity, ShoalRoute route) throws IOException {
         this.worldViewId = worldViewId;
         this.worldEntity = worldEntity;
-        load();
+        this.pathPoints = route.getPathPoints();
+        this.stopPoints = route.getStopPoints();
     }
 
     public void setSpecies(ShoalSpecies species) {
@@ -208,69 +209,6 @@ public class ShoalData {
         this.shoalNpc = shoalNpc;
     }
 
-    private void load() throws IOException
-    {
-        Properties properties = new Properties();
-        String idStr;
-        int id;
-        String value;
-
-        try (InputStream in = getClass().getResourceAsStream("/" + RESOURCE_NAME))
-        {
-            if (in == null) {
-                throw new IOException("Could not find resource: " + RESOURCE_NAME);
-            }
-            properties.load(in);
-        }
-
-        for (String key : properties.stringPropertyNames())
-        {
-            if (key.startsWith("shoalpath."))
-            {
-                idStr = key.substring("shoalpath.".length());
-                if(Integer.parseInt(idStr) == getWorldViewId()) {
-                    value = properties.getProperty(key);
-                    this.pathPoints = parsePoints(value);
-                }
-            }
-
-            if (key.startsWith("shoalstops.")) {
-                idStr = key.substring("shoalstops.".length());
-                if (Integer.parseInt(idStr) == getWorldViewId()) {
-                    value = properties.getProperty(key);
-                    this.stopPoints = parsePoints(value);
-                }
-            }
-        }
-    }
-
-    private List<WorldPoint> parsePoints(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return Arrays.stream(value.split("\\|"))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(this::parsePoint)
-                .collect(Collectors.toList());
-    }
-
-    private WorldPoint parsePoint(String token)
-    {
-        String[] parts = token.split(", ");
-        if(parts.length < 2)
-        {
-            throw new IllegalArgumentException("Invalid Point: " + token);
-        }
-
-        int x = Integer.parseInt(parts[0].trim());
-        int y = Integer.parseInt(parts[1].trim());
-        int plane = Integer.parseInt(parts[2].trim());
-
-        return new WorldPoint(x, y, plane);
-    }
-
     public void setDepthFromAnimation()
     {
         if (shoalNpc == null)
@@ -301,7 +239,6 @@ public class ShoalData {
         }
 
     }
-
     public NPC getShoalNpc() {
         return shoalNpc;
     }

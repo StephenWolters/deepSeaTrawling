@@ -56,6 +56,9 @@ public class DeepSeaTrawling extends Plugin
 	private InfoBoxManager infoBoxManager;
 
     @Inject
+    ShoalRouteRegistry shoalRouteRegistry;
+
+    @Inject
     private Notifier notifier;
     private boolean notifiedFull = false;
 
@@ -98,6 +101,9 @@ public class DeepSeaTrawling extends Plugin
 		nearestShoal = null;
 		rebuildTrackedShoals();
         rebuildShoalColours();
+
+        shoalRouteRegistry.load();
+
 		log.info("Deep Sea Trawling Plugin Started");
 
 	}
@@ -149,9 +155,9 @@ public class DeepSeaTrawling extends Plugin
 
         if(nearestShoal == null && cfg.getId() == SHOAL_WORLD_ENTITY_TYPE)
 		{
-			nearestShoal = new ShoalData(worldViewId, entity);
+			nearestShoal = new ShoalData(worldViewId, entity, shoalRouteRegistry.get(worldViewId));
 		} else if (nearestShoal != null && nearestShoal.getWorldViewId() != worldViewId && cfg.getId() == SHOAL_WORLD_ENTITY_TYPE) {
-			nearestShoal = new ShoalData(worldViewId, entity);
+			nearestShoal = new ShoalData(worldViewId, entity, shoalRouteRegistry.get(worldViewId));
 		} else if (cfg.getId() == SKIFF_WORLD_ENTITY_TYPE || cfg.getId() == SLOOP_WORLD_ENTITY_TYPE) {
             boats.put(worldViewId, cfg.getId());
         }
@@ -267,7 +273,7 @@ public class DeepSeaTrawling extends Plugin
         }
 
         if (shoal.getWasMoving() && !isMoving) {
-            int stopDurationTicks = ShoalData.shoalTimers.get(ShoalTypes.fromIdToSpecies(getNearestShoal().getWorldViewId()));
+            int stopDurationTicks = ShoalData.shoalTimers.getOrDefault(shoal.getSpecies(), 0);
             shoal.beginStopTimer(nowTick, stopDurationTicks);
         }
 

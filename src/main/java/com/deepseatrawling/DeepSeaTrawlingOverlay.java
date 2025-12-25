@@ -51,10 +51,6 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         GameObject object = shoal.getShoalObject();
         if (object == null)
         {
-//            LocalPoint localPoint = shoal.getCurrent();
-//            if (localPoint != null) {
-//                drawArea(graphics, localPoint, 3, Color.WHITE);
-//            }
             return null;
         }
 

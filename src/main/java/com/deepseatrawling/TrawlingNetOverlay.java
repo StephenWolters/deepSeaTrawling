@@ -76,7 +76,7 @@ public class TrawlingNetOverlay extends Overlay {
             }
 
             int currentDepth = Net.NetDepth.asInt(net.getNetDepth());
-            if (config.highlightWrongDepthNets() && currentDepth > 0)
+            if (config.highlightWrongDepthNets() && currentDepth > 0 && currentDepth != desiredDepth)
             {
                 trawlingNetOutline(graphics, plugin.fishQuantity, totalNetSize, netObj);
             }
