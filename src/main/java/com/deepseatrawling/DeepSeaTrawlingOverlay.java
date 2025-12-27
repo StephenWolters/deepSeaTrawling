@@ -21,6 +21,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
 
     private final Client client;
     private final DeepSeaTrawling plugin;
+    private static final int SHOAL_DEFAULT_SIZE = 6;
 
     @Inject
     DeepSeaTrawlingConfig config;
@@ -49,26 +50,6 @@ public class DeepSeaTrawlingOverlay extends Overlay {
             return null;
         }
 
-        GameObject object = shoal.getShoalObject();
-        if (object == null)
-        {
-            return null;
-        }
-
-        LocalPoint localLocation = object.getLocalLocation();
-
-        ObjectComposition composition = client.getObjectDefinition(object.getId());
-        if (composition == null) {
-            return null;
-        }
-
-        int sizeX = composition.getSizeX();
-        int sizeY = composition.getSizeY();
-
-        int size = Math.max(sizeX, sizeY);
-        if (size <= 0) {
-            size = 1;
-        }
         if(plugin.trackedShoals.contains(shoal.getWorldViewId())) {
             Color baseColour = plugin.speciesColours.getOrDefault(shoal.getSpecies(), Color.WHITE);
 
@@ -80,7 +61,28 @@ public class DeepSeaTrawlingOverlay extends Overlay {
             } else {
                 drawPath(graphics, shoal, Color.WHITE);
             }
-            drawStopSquares(graphics, shoal, size, baseColour);
+            drawStopSquares(graphics, shoal, baseColour);
+
+            GameObject object = shoal.getShoalObject();
+            if (object == null)
+            {
+                return null;
+            }
+
+            LocalPoint localLocation = object.getLocalLocation();
+
+            ObjectComposition composition = client.getObjectDefinition(object.getId());
+            if (composition == null) {
+                return null;
+            }
+
+            int sizeX = composition.getSizeX();
+            int sizeY = composition.getSizeY();
+
+            int size = Math.max(sizeX, sizeY);
+            if (size <= 0) {
+                size = 1;
+            }
 
             drawArea(graphics, localLocation, size, baseColour);
 
@@ -169,10 +171,12 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         }
     }
 
-    private void drawStopSquares(Graphics2D square, ShoalData shoal, int sizeTiles, Color baseColour)
+    private void drawStopSquares(Graphics2D square, ShoalData shoal, Color baseColour)
     {
         Color outline = new Color(baseColour.getRed(), baseColour.getGreen(), baseColour.getBlue());
         Color fill = new Color(baseColour.getRed(), baseColour.getGreen(), baseColour.getBlue(), 50);
+
+        WorldPoint shoalWP = shoal.getCurrentWorldPoint();
 
         for (WorldPoint worldPoint : shoal.getStopPoints())
         {
@@ -180,16 +184,14 @@ public class DeepSeaTrawlingOverlay extends Overlay {
                 continue;
             }
 
+            if (shoalWP != null && worldPoint.distanceTo(shoalWP) < 2) {
+                continue;
+            }
+
             LocalPoint localPoint = LocalPoint.fromWorld(client, worldPoint);
-            if (localPoint == null) {
-                continue;
-            }
+            if (localPoint == null) continue;
 
-            if (plugin.localDistanceSq(localPoint, shoal.getCurrent()) < 512 * 512) {
-                continue;
-            }
-
-            Polygon polygon = Perspective.getCanvasTileAreaPoly(client, localPoint, sizeTiles);
+            Polygon polygon = Perspective.getCanvasTileAreaPoly(client, localPoint, SHOAL_DEFAULT_SIZE);
             if (polygon == null) {
                 continue;
             }
@@ -219,7 +221,6 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         double angle = Math.atan2(dy, dx);
 
         int arrowLength = 10;
-        int arrowWidth = 6;
 
         double leftAngle = angle + Math.toRadians(155);
         double rightAngle = angle - Math.toRadians(155);
@@ -244,6 +245,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         ShoalData.ShoalDepth depth = shoal.getDepth();
         String depthText;
         Color textColour;
+        if (depth == null) return;
 
         switch (depth)
         {
@@ -290,7 +292,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
         }
 
         int nowTick = client.getTickCount();
-        if (!shoal.getWasMoving() && shoal.hasActiveStopTimer() && config.showDepthTimer())
+        if (!shoal.isWasMoving() && shoal.hasActiveStopTimer() && config.showDepthTimer())
         {
             int tDepth = shoal.getTicksUntilDepthChange(nowTick);
             int tMove  = shoal.getTicksUntilMove(nowTick);
@@ -301,7 +303,7 @@ public class DeepSeaTrawlingOverlay extends Overlay {
                 lines.add("Net change: " + formatTicks(tDepth));
             }
             // Always show "until move" while stopped (until it hits 0)
-            if (tMove >= 0)
+            if (tMove > 0)
             {
                 lines.add("Moves: " + formatTicks(tMove));
             }

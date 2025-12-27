@@ -2,18 +2,14 @@ package com.deepseatrawling;
 
 import java.util.*;
 
+import lombok.Getter;
+import lombok.Setter;
 import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.WorldEntity;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.stream.Collectors;
 
 public class ShoalData {
 
@@ -97,82 +93,48 @@ public class ShoalData {
 
     private int stopStartTick = -1;
     private int stopDurationTicks = 0; // set when stop begins
-    private int lastMoveTick = -1;
 
+    @Setter
+    @Getter
     private NPC shoalNpc;
 
+    @Getter
+    @Setter
     private ShoalDepth depth;
 
-    private static final String RESOURCE_NAME = "shoals.properties";
-
+    @Getter
     private final WorldEntity worldEntity;
+
+    @Getter
     private final int worldViewId;
+
+    @Setter
+    @Getter
     private ShoalSpecies species;
 
+    @Setter
+    @Getter
     private GameObject shoalObject;
 
-    private LocalPoint last;
-    private LocalPoint current;
-    //private LocalPoint next;
+    @Getter
+    @Setter
+    private WorldPoint last;
+
+    @Getter
+    @Setter
+    private WorldPoint currentWorldPoint;
+
+    @Setter
+    @Getter
     private boolean wasMoving;
 
-    private List<WorldPoint> pathPoints = new ArrayList<>();
-    private List<WorldPoint> stopPoints = new ArrayList<>();
+    @Getter
+    @Setter
+    private int movingStreak = 0;
 
-    public ShoalData(int worldViewId, WorldEntity worldEntity, ShoalRoute route) throws IOException {
-        this.worldViewId = worldViewId;
-        this.worldEntity = worldEntity;
-        this.pathPoints = route.getPathPoints();
-        this.stopPoints = route.getStopPoints();
-    }
-
-    public void setSpecies(ShoalSpecies species) {
-        this.species = species;
-        this.depth = species.defaultDepth();
-    }
-
-    public ShoalSpecies getSpecies() {
-        return species;
-    }
-
-    public ShoalDepth getDepth() {
-        return depth;
-    }
-
-    public void setDepth(ShoalDepth depth) {
-        this.depth = depth;
-    }
-
-
-    public void setShoalObject(GameObject shoalObject) {
-        this.shoalObject = shoalObject;
-    }
-
-    public GameObject getShoalObject() {
-        return shoalObject;
-    }
-
-    public WorldEntity getWorldEntity() {
-        return worldEntity;
-    }
-
-    public int getWorldViewId() {
-        return worldViewId;
-    }
-
-    public LocalPoint getCurrent() {
-        return current;
-    }
-
-    public void setCurrent(LocalPoint current) {
-        this.current = current;
-    }
-
-    public LocalPoint getLast() { return last; }
-
-    public void setLast(LocalPoint last) {
-        this.last = last;
-    }
+    @Getter
+    @Setter
+    private int stoppedStreak = 0;
 
     /*
     public void setNext(LocalPoint next) {
@@ -191,29 +153,27 @@ public class ShoalData {
         stopPoints.add(worldPoint);
     }
 */
-    public List<WorldPoint> getPathPoints() {
-        return pathPoints;
+    @Getter
+    private final List<WorldPoint> pathPoints;
+    @Getter
+    private final List<WorldPoint> stopPoints;
+
+    public ShoalData(int worldViewId, WorldEntity worldEntity, ShoalRoute route) {
+        this.worldViewId = worldViewId;
+        this.worldEntity = worldEntity;
+        this.pathPoints = route.getPathPoints();
+        this.stopPoints = route.getStopPoints();
     }
 
-    public List<WorldPoint> getStopPoints() {
-        return stopPoints;
-    }
-
-    public boolean getWasMoving() {
-        return wasMoving;
-    }
-
-    public void setWasMoving(boolean wasMoving) { this.wasMoving = wasMoving; }
-
-    public void setShoalNpc(NPC shoalNpc) {
-        this.shoalNpc = shoalNpc;
-    }
-
-    public void setDepthFromAnimation()
+    public void setDepthFromAnimation(int currentTick)
     {
         if (shoalNpc == null)
         {
-            this.depth = ShoalDepth.UNKNOWN;
+            if (getTicksUntilMove(currentTick) > 0 && getTicksUntilDepthChange(currentTick) > 0) {
+                this.depth = ShoalDepth.UNKNOWN;
+            } else {
+                this.depth = this.species.defaultDepth();
+            }
             return;
         }
         int animation = shoalNpc.getAnimation();
@@ -238,9 +198,6 @@ public class ShoalData {
 
         }
 
-    }
-    public NPC getShoalNpc() {
-        return shoalNpc;
     }
 
     public void beginStopTimer(int currentTick, int durationTicks)
@@ -270,17 +227,20 @@ public class ShoalData {
     public int getTicksUntilDepthChange(int currentTick)
     {
         if (!hasActiveStopTimer()) return -1;
+        if (this.getSpecies() == ShoalSpecies.GIANT_KRILL || this.getSpecies() == ShoalSpecies.HADDOCK || this.getSpecies() == ShoalSpecies.SHIMMERING) { return -1; }
         int half = stopDurationTicks / 2;
         int elapsed = currentTick - stopStartTick;
-        return Math.max(0, half - elapsed);
+        return Math.max(-1, half - elapsed);
     }
 
+/*
     public boolean isPastDepthChangePoint(int currentTick)
     {
         if (!hasActiveStopTimer()) return false;
         int half = stopDurationTicks / 2;
         return (currentTick - stopStartTick) >= half;
     }
+*/
 
 
 }

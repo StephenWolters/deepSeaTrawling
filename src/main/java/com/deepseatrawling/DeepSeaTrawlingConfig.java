@@ -215,6 +215,15 @@ public interface DeepSeaTrawlingConfig extends Config
     )
     default boolean showShoalDepthText() { return true; }
 
+    @ConfigItem(
+            keyName = "infoboxIsEnabled",
+            name = "Show amount of fish in nets",
+            description = "Show an infobox with the amount of fish in your nets",
+            position = 6,
+            section = netsSection
+    )
+    default boolean infoboxIsEnabled() { return true; }
+
     // ---------- Notifications ----------
     @ConfigItem(
             keyName = "notifyNetFull",
@@ -251,7 +260,7 @@ public interface DeepSeaTrawlingConfig extends Config
             position = 0,
             section = coloursSection
     )
-    default Color fishCounterTextColour() { return Color.WHITE; }
+    default Color fishCounterTextColour() { return new Color(255, 255, 255); }
 
     @ConfigItem(
             keyName = "uiHighlightColour",

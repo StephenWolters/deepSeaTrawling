@@ -1,9 +1,11 @@
 package com.deepseatrawling;
 
 import com.google.inject.Provides;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.VarbitID;
@@ -69,7 +71,8 @@ public class DeepSeaTrawling extends Plugin
     public final int SLOOP_WORLD_ENTITY_TYPE = 3;
     public Map<Integer, Integer> boats = new HashMap<>();
 
-	private ShoalData nearestShoal;
+	@Getter
+    private ShoalData nearestShoal;
 
     public Map<ShoalData.ShoalSpecies, Color> speciesColours = new EnumMap<>(ShoalData.ShoalSpecies.class);
 
@@ -94,7 +97,7 @@ public class DeepSeaTrawling extends Plugin
 		overlayManager.add(trawlingNetOverlay);
 
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
-		trawlingNetInfoBox = new TrawlingNetInfoBox(icon, this);
+		trawlingNetInfoBox = new TrawlingNetInfoBox(icon, this, config);
 		infoBoxManager.addInfoBox(trawlingNetInfoBox);
 
 		nearestShoal = null;
@@ -108,8 +111,7 @@ public class DeepSeaTrawling extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
-	{
+	protected void shutDown() {
 		overlayManager.remove(overlay);
 		overlayManager.remove(widgetOverlay);
 		overlayManager.remove(trawlingNetOverlay);
@@ -124,16 +126,12 @@ public class DeepSeaTrawling extends Plugin
 		log.info("Deep Sea Trawling Plugin Stopped");
 	}
 
-	public ShoalData getNearestShoal() {
-		return nearestShoal;
-	}
-
-	public final GameObject[] netObjectByIndex = new GameObject[2];
+    public final GameObject[] netObjectByIndex = new GameObject[2];
 
 	public int fishQuantity = 0;
 
 	@Subscribe
-	public void onWorldEntitySpawned(WorldEntitySpawned event) throws IOException {
+	public void onWorldEntitySpawned(WorldEntitySpawned event) {
 		WorldEntity entity = event.getWorldEntity();
 		WorldEntityConfig cfg = entity.getConfig();
 
@@ -152,10 +150,8 @@ public class DeepSeaTrawling extends Plugin
 
 		int worldViewId = view.getId();
 
-        if(nearestShoal == null && cfg.getId() == SHOAL_WORLD_ENTITY_TYPE)
+        if(cfg.getId() == SHOAL_WORLD_ENTITY_TYPE)
 		{
-			nearestShoal = new ShoalData(worldViewId, entity, shoalRouteRegistry.get(worldViewId));
-		} else if (nearestShoal != null && nearestShoal.getWorldViewId() != worldViewId && cfg.getId() == SHOAL_WORLD_ENTITY_TYPE) {
 			nearestShoal = new ShoalData(worldViewId, entity, shoalRouteRegistry.get(worldViewId));
 		} else if (cfg.getId() == SKIFF_WORLD_ENTITY_TYPE || cfg.getId() == SLOOP_WORLD_ENTITY_TYPE) {
             boats.put(worldViewId, cfg.getId());
@@ -173,35 +169,21 @@ public class DeepSeaTrawling extends Plugin
         }
 
         boats.remove(entity.getWorldView().getId());
-		//?
-	}
 
-	@Subscribe
-	public void onNpcSpawned(NpcSpawned e)
-	{
-		if (e.getNpc().getId() == NpcID.SAILING_SHOAL_RIPPLES)
-		{
-			nearestShoal.setShoalNpc(e.getNpc());
-			nearestShoal.setDepthFromAnimation();
-		}
-	}
-
-	public void onNpcDespawned(NpcDespawned e)
-	{
-		if ( nearestShoal.getShoalNpc() == e.getNpc() )
-		{
-			nearestShoal.setShoalNpc(null);
-			nearestShoal.setDepth(ShoalData.ShoalDepth.UNKNOWN);
-		}
+        if (cfg.getId() == SHOAL_WORLD_ENTITY_TYPE && nearestShoal != null && nearestShoal.getWorldViewId() == entity.getWorldView().getId()) {
+            nearestShoal.setLast(null);
+            nearestShoal.setCurrentWorldPoint(null);
+            nearestShoal.setShoalNpc(null);
+            nearestShoal.setShoalObject(null);
+            nearestShoal.setMovingStreak(0);
+            nearestShoal.setStoppedStreak(0);
+            nearestShoal.setWasMoving(false);
+        }
 	}
 
 	@Subscribe
 	public void onGameObjectSpawned(GameObjectSpawned event)
 	{
-		GameObject object = event.getGameObject();
-		if(object == null || object.getWorldView() == null) {
-			return;
-		}
 
 		GameObject obj = event.getGameObject();
 		if (obj == null || obj.getWorldView() == null) return;
@@ -225,66 +207,162 @@ public class DeepSeaTrawling extends Plugin
 			return;
 		}
 
-		int worldViewId = object.getWorldView().getId();
+		int worldViewId = obj.getWorldView().getId();
 		ShoalData shoal = nearestShoal;
 		if (shoal == null) {
 			return;
 		}
 
-		shoal.setSpecies(species);
-		shoal.setShoalObject(object);
-		shoal.setDepthFromAnimation();
-		shoal.setCurrent(shoal.getWorldEntity().getLocalLocation());
+        if (shoal.getWorldViewId() == worldViewId)
+        {
+            shoal.setSpecies(species);
+            shoal.setShoalObject(obj);
 
-		log.debug("Shoal worldViewId={} species={} objectId={}", worldViewId, species, id);
+            LocalPoint lp = shoal.getWorldEntity().getLocalLocation();
+            if (lp != null)
+            {
+                WorldPoint wp = WorldPoint.fromLocal(client, lp);
+                shoal.setCurrentWorldPoint(wp);
+                shoal.setLast(null);
+            }
+
+            shoal.setMovingStreak(0);
+            shoal.setStoppedStreak(0);
+
+            shoal.setDepthFromAnimation(client.getTickCount());
+            log.debug("Shoal worldViewId={} species={} objectId={}", worldViewId, species, id);
+        }
 	}
 
+    @Subscribe
 	public void onGameObjectDespawned(GameObjectDespawned event) {
 		GameObject obj = event.getGameObject();
 		if (obj == null) return;
 
 		if (netObjectByIndex[0] == obj) netObjectByIndex[0] = null;
 		if (netObjectByIndex[1] == obj) netObjectByIndex[1] = null;
-	}
 
-	@Subscribe
-	public void onGameTick(GameTick tick)
-	{
+        if (nearestShoal != null && nearestShoal.getShoalObject() == obj)
+        {
+            nearestShoal.setShoalObject(null);
+
+        }
+    }
+
+    @Subscribe
+    public void onNpcSpawned(NpcSpawned e)
+    {
+        if (nearestShoal != null && e.getNpc().getId() == NpcID.SAILING_SHOAL_RIPPLES && e.getNpc().getWorldView().getId() == nearestShoal.getWorldViewId())
+        {
+            nearestShoal.setShoalNpc(e.getNpc());
+            nearestShoal.setDepthFromAnimation(client.getTickCount());
+        }
+    }
+
+    @Subscribe
+    public void onNpcDespawned(NpcDespawned e)
+    {
+        if (nearestShoal != null && nearestShoal.getShoalNpc() != null && nearestShoal.getShoalNpc() == e.getNpc() )
+        {
+            nearestShoal.setShoalNpc(null);
+            nearestShoal.setDepth(ShoalData.ShoalDepth.UNKNOWN);
+        }
+    }
+
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged e) {
+        GameState state = e.getGameState();
+        if (state == GameState.HOPPING || state == GameState.LOGGING_IN) {
+            fishQuantity = 0;
+            if (nearestShoal != null) {
+                nearestShoal.setDepth(ShoalData.ShoalDepth.UNKNOWN);
+                nearestShoal.clearStopTimer();
+                nearestShoal.setLast(null);
+            }
+        }
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick tick)
+    {
         ShoalData shoal = getNearestShoal();
-		if (shoal == null) {
-			return;
-		}
-		shoal.setDepthFromAnimation();
-
-        LocalPoint current = shoal.getWorldEntity().getLocalLocation();
-        shoal.setCurrent(current);
+        if (shoal == null) return;
 
         int nowTick = client.getTickCount();
 
-        boolean isMoving = current != null
-            && shoal.getLast() != null
-            && !current.equals(shoal.getLast());
+        shoal.setDepthFromAnimation(client.getTickCount());
 
-        if (shoal.getLast() == null) {
-            shoal.setLast(current);
-            shoal.setWasMoving(false);
+        LocalPoint currentLP = shoal.getWorldEntity().getLocalLocation();
+        if (currentLP == null) return;
+
+        WorldPoint currentWP = WorldPoint.fromLocal(client, currentLP);
+
+        shoal.setCurrentWorldPoint(currentWP);
+
+        WorldPoint last = shoal.getLast();
+        if (last == null)
+        {
+            shoal.setLast(currentWP);
+            shoal.setMovingStreak(0);
+            shoal.setStoppedStreak(0);
             return;
         }
 
-        if (shoal.getWasMoving() && !isMoving) {
-            int stopDurationTicks = ShoalData.shoalTimers.getOrDefault(shoal.getSpecies(), 0);
-            shoal.beginStopTimer(nowTick, stopDurationTicks);
+        boolean isMoving = !currentWP.equals(last);
+
+        if (isMoving)
+        {
+            shoal.setMovingStreak(shoal.getMovingStreak() + 1);
+            shoal.setStoppedStreak(0);
+            shoal.setDepth(shoal.getSpecies().defaultDepth());
+        }
+        else
+        {
+            shoal.setStoppedStreak(shoal.getStoppedStreak() + 1);
+            shoal.setMovingStreak(0);
         }
 
-        // Transition: stopped -> moving
-        if (!shoal.getWasMoving() && isMoving)
+        boolean isMovingConfirmed = shoal.getMovingStreak() >= 2;
+        boolean isStoppedConfirmed = shoal.getStoppedStreak() >= 2;
+
+        boolean wasMovingPrev = shoal.isWasMoving();
+
+        boolean movingToStopped = wasMovingPrev && isStoppedConfirmed;
+        boolean stoppedToMoving = !wasMovingPrev && isMovingConfirmed;
+
+        if (movingToStopped)
+        {
+            if (!shoal.hasActiveStopTimer())
+            {
+                int stopDurationTicks = ShoalData.shoalTimers
+                        .getOrDefault(ShoalTypes.fromIdToSpecies(shoal.getWorldViewId()), 0);
+
+                if (stopDurationTicks > 0)
+                {
+                    shoal.beginStopTimer(nowTick, stopDurationTicks - 2);
+                }
+            }
+            shoal.setWasMoving(false);
+        }
+        else if (stoppedToMoving)
+        {
+            shoal.clearStopTimer();
+            shoal.setWasMoving(true);
+        }
+
+        if (shoal.hasActiveStopTimer() && shoal.getTicksUntilMove(nowTick) <= 0)
         {
             shoal.clearStopTimer();
         }
 
-		shoal.setWasMoving(isMoving);
-        shoal.setLast(current);
-	}
+        if (isMovingConfirmed) {
+            shoal.setWasMoving(true);
+        } else if (isStoppedConfirmed) {
+            shoal.setWasMoving(false);
+        }
+
+        shoal.setLast(currentWP);
+    }
 
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
@@ -313,11 +391,11 @@ public class DeepSeaTrawling extends Plugin
 			} else if (msg.contains(" catches ")) {
 				int index = msg.indexOf(" catches ") + " catches ".length();
 				substring = msg.substring(index, msg.indexOf(" ", index + 1));
-			}
+                log.debug("fish caught! = {}", substring);
+            }
 
-			if (!substring.equals(""))
+			if (!substring.isEmpty())
 			{
-				fishQuantity += convertToNumber(substring);
                 int totalNetSize = 0;
                 if (netList[0] != null)
                 {
@@ -327,6 +405,9 @@ public class DeepSeaTrawling extends Plugin
                 {
                     totalNetSize += netList[1].getNetSize();
                 }
+                if (totalNetSize > 0) {
+                    fishQuantity += convertToNumber(substring);
+                }
                 if (fishQuantity >= totalNetSize && config.notifyNetFull() && !notifiedFull) {
                     notifier.notify("Trawling net(s) full! Empty now!");
                     notifiedFull = true;
@@ -334,7 +415,6 @@ public class DeepSeaTrawling extends Plugin
 			}
 		}
 	}
-
 
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged e)
@@ -354,12 +434,6 @@ public class DeepSeaTrawling extends Plugin
 
 	}
 
-	public int localDistanceSq(LocalPoint a, LocalPoint b)
-	{
-		int dx = a.getX() - b.getX();
-		int dy = a.getY() - b.getY();
-		return dx * dx + dy * dy;
-	}
 /*
 	public int worldDistanceSq(WorldPoint a, WorldPoint b)
 	{
