@@ -7,7 +7,6 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.api.WorldEntity;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -54,8 +53,9 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics)
     {
+        int playerBoat;
         if (plugin.boats.get(client.getLocalPlayer().getWorldView().getId()) != null) {
-            int playerBoat = plugin.boats.get(client.getLocalPlayer().getWorldView().getId());
+            playerBoat = plugin.boats.get(client.getLocalPlayer().getWorldView().getId());
             if (config.showNetDepthText()) {
                 if (playerBoat == SKIFF_WORLDVIEW_ID) {
                     drawNetDepthLetter(graphics, 0);
@@ -63,8 +63,11 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
                     drawNetDepthLetter(graphics, 0);
                     drawNetDepthLetter(graphics, 1);
                 }
+            }
+        } else {
+            return null;
         }
-    }
+
        ShoalData shoal = plugin.getNearestShoal();
        if (shoal != null && shoal.getDepth() != ShoalData.ShoalDepth.UNKNOWN)
        {
@@ -73,7 +76,7 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
                return null;
            }
 
-           for (int netIndex = 0; netIndex < 2; netIndex++)
+           for (int netIndex = 0; netIndex < playerBoat - 1; netIndex++)
            {
                int current = Net.NetDepth.asInt(plugin.netList[netIndex].getNetDepth());
                if (current <= 0 || current == desired) {
@@ -153,19 +156,11 @@ public class DeepSeaTrawlingWidgetOverlay extends Overlay {
 
         Widget parent = client.getWidget(SAILING_SIDEPANEL_GROUP , FACILITIES_CONTENT_CLICKLAYER_CHILD);
         if (parent == null) return;
-        boolean hidden = false;
-        for (Widget widgetParent = parent; widgetParent != null; widgetParent = widgetParent.getParent())
-        {
-            if (widgetParent.isHidden()) {
-                hidden = true;
-            }
-        }
 
         if (plugin.boats.get(client.getLocalPlayer().getWorldView().getId()) == null) {
             return;
         }
         int shipType = plugin.boats.get(client.getLocalPlayer().getWorldView().getId());
-
 
         if (shipType == SLOOP_WORLDVIEW_ID) {
             downId = (netIndex == 0) ? STARBOARD_DOWN_INDEX : PORT_DOWN_INDEX;
